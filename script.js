@@ -1,88 +1,67 @@
-// Read the CSV file and parse it into an array of objects
-fetch('data.csv')
-  .then(response => response.text())
-  .then(data => {
-    const rows = data.trim().split('\n');
-    const headers = rows[0].split(',');
-    const tableData = rows.slice(1).map(row => {
-      const rowData = row.split(',');
-      return {
-        PlaceName: rowData[0],
-        PlaceNameModern: rowData[1],
-        Latitude: rowData[2],
-        Longitude: rowData[3],
-        NameOfTraveler: rowData[4],
-        YearOfTravel: rowData[5],
-        Description: rowData[6],
-        Citation: rowData[7],
-        Hyperlink: rowData[8],
-        Country: rowData[9],
-        Region: rowData[10],
-        Continent: rowData[11],
-      };
-    });
-
-    // Create an HTML table with the headers and body
-    const table = document.createElement('table');
-    const thead = document.createElement('thead');
-    const tbody = document.createElement('tbody');
-
-    // Create the header row
-    const headerRow = document.createElement('tr');
-    headers.forEach(headerText => {
-      const header = document.createElement('th');
-      header.innerText = headerText;
-      headerRow.appendChild(header);
-    });
-    thead.appendChild(headerRow);
-
-    // Populate the table with the data from the CSV file
-    tableData.forEach(rowData => {
-      const row = document.createElement('tr');
-      Object.values(rowData).forEach(cellData => {
-        const cell = document.createElement('td');
-        cell.innerText = cellData;
-        row.appendChild(cell);
+var tabulate = function (data, columns) {
+    var table = d3.select('body').append('table')
+    var thead = table.append('thead')
+    var tbody = table.append('tbody')
+  
+    thead.append('tr')
+      .selectAll('th')
+      .data(columns)
+      .enter()
+      .append('th')
+      .text(function (d) { return d })
+  
+    var rows = tbody.selectAll('tr')
+        .data(data)
+        .enter()
+      .append('tr')
+  
+    var cells = rows.selectAll('td')
+        .data(function(row) {
+            return columns.map(function (column) {
+                return { column: column, value: row[column] }
+          })
+        })
+      .enter()
+      .append('td')
+      .text(function (d) { return d.value })
+      .attr('title', function (d) {
+        if (d.column === 'Description') {
+          return d.value;
+        }
       });
-      tbody.appendChild(row);
-    });
-
-    // Add the thead and tbody to the table
-    table.appendChild(thead);
-    table.appendChild(tbody);
-
-    // Add sorting functionality to the table
-    Array.from(thead.querySelectorAll('th')).forEach(header => {
-      header.addEventListener('click', () => {
-        const column = header.dataset.column;
-        const order = header.dataset.order === 'asc' ? 'desc' : 'asc';
-        header.dataset.order = order;
-
-        // Sort the table data
-        tableData.sort((a, b) => {
-          if (a[column] < b[column]) {
-            return order === 'asc' ? -1 : 1;
-          }
-          if (a[column] > b[column]) {
-            return order === 'asc' ? 1 : -1;
-          }
-          return 0;
-        });
-
-        // Re-populate the table with the sorted data
-        tbody.innerHTML = '';
-        tableData.forEach(rowData => {
-          const row = document.createElement('tr');
-          Object.values(rowData).forEach(cellData => {
-            const cell = document.createElement('td');
-            cell.innerText = cellData;
-            row.appendChild(cell);
-          });
-          tbody.appendChild(row);
-        });
+  
+    // Add a select element for sorting the table
+    var select = d3.select('body')
+      .append('div')
+      .attr('class', 'sort-select')
+      .append('label')
+      .attr('for', 'sort-by')
+      .text('Sort by:')
+      .append('select')
+      .attr('id', 'sort-by')
+      .on('change', function() {
+        var selectedColumn = d3.select(this).property('value');
+        tbody.selectAll('tr')
+          .sort(function (a, b) {
+            return d3.ascending(a[selectedColumn], b[selectedColumn]);
+          })
       });
-    });
-
-    // Append the table to the DOM
-    document.body.appendChild(table);
+  
+    // Add options to the select element for each column
+    select.selectAll('option')
+      .data(columns)
+      .enter()
+      .append('option')
+      .attr('value', function(d) { return d; })
+      .text(function(d) { return d; });
+  
+    return table;
+  }
+  
+  
+  
+  d3.csv('data_2_14_2023.csv',function (data) {
+    var columns = ['PlaceName', 'PlaceNameModern', 'Latitude', 'Longitude', 'NameOfTraveler', 'YearOfTravel', 'Description', 'Citation', 'Hyperlink', 'Country', 'Region', 'Continent'];
+    tabulate(data, columns);
   });
+  
